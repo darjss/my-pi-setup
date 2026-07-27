@@ -1,0 +1,14 @@
+follow the ASD-STE100 when writing
+
+When working in typescript:
+
+- when adding a package to a project add it with an install command, instead of manually editing the package json
+- run check/format/lint commands when your done making a change. if they don't exist, suggest making them for the project you're in
+- avoid explicit return types unless absolutely needed
+- `as any` should be an absolute last resort. always use real type safety. lean on type inference instead of manually writing new types over and over again
+
+In general:
+
+- when asking questions, ask them one at a time
+- always write simple, direct code that meets the stated requirement and no more
+- prefer the smallest local change with the fewest concepts, files, and moving parts
