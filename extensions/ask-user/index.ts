@@ -130,12 +130,32 @@ export default function askUser(pi: ExtensionAPI) {
         );
       }
 
-      if (ctx.mode !== "tui") {
-        return reply(buildAskUserResultMessage({ kind: "no-ui" }));
-      }
-
       if (signal?.aborted) {
         return reply(buildAskUserResultMessage({ kind: "cancelled" }));
+      }
+
+      if (ctx.mode !== "tui") {
+        const labels = params.options.map((option) => option.label);
+        const answer = await ctx.ui.select(params.question, labels, { signal });
+        if (answer === undefined) {
+          return reply(buildAskUserResultMessage({ kind: "dismissed" }));
+        }
+        const index = labels.indexOf(answer);
+        if (index === -1) {
+          return reply(
+            buildAskUserResultMessage({ kind: "custom", answer }),
+            answer,
+            true,
+          );
+        }
+        return reply(
+          buildAskUserResultMessage({
+            kind: "selected",
+            answer,
+            index: index + 1,
+          }),
+          answer,
+        );
       }
 
       const allOptions: DisplayOption[] = [
