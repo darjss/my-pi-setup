@@ -104,11 +104,11 @@ const BOOTSTRAP = String.raw`
     if (!Array.isArray(items)) throw new Error("parallel() expects an array of zero-argument agent thunks");
     const requested = options && typeof options.concurrency === "number"
       ? Math.floor(options.concurrency)
-      : 4;
+      : 8;
     if (!Number.isFinite(requested) || requested < 1) {
       throw new Error("parallel(): concurrency must be a positive integer");
     }
-    const concurrency = Math.min(4, requested);
+    const concurrency = Math.min(8, requested);
     return mapLimited(items, concurrency, (item) => {
       if (typeof item !== "function") {
         throw new Error("parallel() items must be zero-argument functions");

@@ -10,6 +10,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { formatContextUtilization } from "../shared/context-utilization.ts";
 import { safeStringify } from "./serialization.ts";
+import type { WorktreeDetails } from "./worktree.ts";
 
 export type Theme = ExtensionContext["ui"]["theme"];
 
@@ -73,6 +74,7 @@ export interface AgentRecord {
   error?: string;
   preview: string;
   usage: AgentUsage;
+  workspace?: WorktreeDetails;
   /** Normalized, serializable subagent conversation shown by /workflows. */
   transcript: TranscriptEntry[];
 }

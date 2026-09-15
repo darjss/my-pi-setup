@@ -28,3 +28,7 @@ models-store.json
 # Local editor settings
 .vscode/
 .idea/
+
+# Generated/runtime artifacts
+generated-images/
+t3-control-v2/

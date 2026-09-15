@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import { mkdtemp, writeFile } from "node:fs/promises";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { StringEnum } from "@earendil-works/pi-ai";
 import {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
+  getAgentDir,
   formatSize,
   truncateHead,
   type AgentToolResult,
@@ -33,7 +34,7 @@ import {
 function readEnvValue(name: string) {
   if (process.env[name]) return process.env[name];
 
-  const envPath = join(homedir(), ".pi", "agent", ".env");
+  const envPath = join(getAgentDir(), ".env");
   let envText = "";
 
   try {
@@ -74,8 +75,7 @@ function createClient() {
   if (!apiKey) {
     return Effect.fail(
       new MissingApiKeyError({
-        message:
-          "Missing FIRECRAWL_API_KEY in the environment or ~/.pi/agent/.env",
+        message: `Missing FIRECRAWL_API_KEY in the environment or ${join(getAgentDir(), ".env")}`,
       }),
     );
   }

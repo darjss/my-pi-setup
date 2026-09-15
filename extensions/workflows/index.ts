@@ -7,7 +7,7 @@
  *
  *   export const meta = { name, description, phases: [{ title, detail? }] }
  *   phase(title)                                  // mark runtime phase progression
- *   await agent(prompt, { label?, phase?, schema?, model?, provider?, effort? })
+ *   await agent(prompt, { label?, phase?, schema?, model?, provider?, effort?, workspace? })
  *   await parallel([() => agent(...), ...], { concurrency? })
  *   args                                          // parsed JSON args passed with the tool call
  *
@@ -76,6 +76,12 @@ import {
 } from "./runner.ts";
 import { runWorkflowSandbox } from "./sandbox.ts";
 import { safeStringify, writeFileAtomic } from "./serialization.ts";
+import {
+  parseWorktreeOptions,
+  WorkflowWorktreeManager,
+  WorktreePreparationError,
+  type WorktreeDetails,
+} from "./worktree.ts";
 
 const PREVIEW_LENGTH = 200;
 const EMIT_INTERVAL_MS = 120;
@@ -95,6 +101,7 @@ interface ScriptAgentResult {
   ok: boolean;
   output: string;
   structured?: unknown;
+  workspace?: WorktreeDetails;
   error?: string;
 }
 
@@ -105,6 +112,7 @@ interface AgentCallOptions {
   model?: unknown;
   provider?: unknown;
   effort?: unknown;
+  workspace?: unknown;
 }
 
 const WorkflowParams = Type.Object({
@@ -416,15 +424,20 @@ export default function workflows(pi: ExtensionAPI) {
       // aborted and settled during session shutdown.
       const controller = new RunController(background ? undefined : signal);
 
-      // Each concurrent child gets its own extension runtime. All children use
-      // the parent cwd and live trust decision.
+      // Each concurrent child gets its own extension runtime. Shared children
+      // use the parent cwd; worktree writers use their generated cwd.
       const projectTrusted = ctx.isProjectTrusted();
-      const getResources = (structured: boolean) =>
+      const getResources = (cwd: string, structured: boolean) =>
         createWorkflowResources(
-          ctx.cwd,
+          cwd,
           structured ? "structured" : "plain",
           projectTrusted,
         );
+      const worktrees = new WorkflowWorktreeManager({
+        cwd: ctx.cwd,
+        runDir,
+        runId,
+      });
 
       // Throttled progress: tool-block updates when blocking. Background
       // runs are covered by the below-editor indicator and /workflows.
@@ -495,26 +508,64 @@ export default function workflows(pi: ExtensionAPI) {
         persistence.checkpoint({ immediate: true });
         emit(false);
 
-        const fail = (error: string): ScriptAgentResult => {
+        const fail = (
+          error: string,
+          workspace?: WorktreeDetails,
+        ): ScriptAgentResult => {
           record.state = "error";
           record.error = error;
+          record.workspace = workspace ?? record.workspace;
           record.finishedAt = Date.now();
           emit();
-          return { ok: false, output: "", error };
+          return {
+            ok: false,
+            output: "",
+            ...(record.workspace ? { workspace: record.workspace } : {}),
+            error,
+          };
         };
 
-        const prompt = buildWorkflowAgentPrompt(
+        const requestedPrompt = buildWorkflowAgentPrompt(
           typeof promptValue === "string"
             ? promptValue
             : String(promptValue ?? ""),
         );
-        if (!prompt.trim())
+        if (!requestedPrompt.trim())
           return fail("agent() requires a non-empty prompt string");
         if (controller.signal.aborted)
           return fail("Workflow was aborted before this agent started");
 
         return controller
           .schedule(async (runSignal) => {
+            let agentCwd = ctx.cwd;
+            let preparedWorktree:
+              | Awaited<ReturnType<WorkflowWorktreeManager["prepare"]>>
+              | undefined;
+            try {
+              const workspace = parseWorktreeOptions(opts.workspace);
+              if (workspace) {
+                if (!projectTrusted) {
+                  return fail(
+                    "Workflow worktree setup is allowed only in trusted projects",
+                  );
+                }
+                preparedWorktree = await worktrees.prepare(
+                  index,
+                  workspace,
+                  runSignal,
+                );
+                agentCwd = preparedWorktree.cwd;
+                record.workspace = preparedWorktree.details;
+                emit();
+              }
+            } catch (error) {
+              const workspace =
+                error instanceof WorktreePreparationError
+                  ? error.workspace
+                  : undefined;
+              return fail(errorText(error), workspace);
+            }
+
             // Model/provider resolution: default to the parent session's model.
             let model: WorkflowModel | undefined = ctx.model;
             if (opts.model !== undefined || opts.provider !== undefined) {
@@ -567,13 +618,19 @@ export default function workflows(pi: ExtensionAPI) {
               thinkingLevel = effort as ThinkingLevel;
             }
 
-            const resources = await getResources(opts.schema !== undefined);
-            const outcome = await runAgent({
+            const resources = await getResources(
+              agentCwd,
+              opts.schema !== undefined,
+            );
+            const prompt = preparedWorktree
+              ? `${requestedPrompt}\n\nYou are working in an isolated workflow worktree on branch ${preparedWorktree.details.branch}. Read the project instructions, make the requested changes, run the relevant checks, commit all changes to this branch, and finish with a clean working tree. Do not switch branches, create another worktree, or edit files outside this workspace.`
+              : requestedPrompt;
+            let outcome = await runAgent({
               prompt,
               schema: opts.schema,
               model,
               thinkingLevel,
-              cwd: ctx.cwd,
+              cwd: agentCwd,
               loader: resources.loader,
               settingsManager: resources.settingsManager,
               modelRegistry: ctx.modelRegistry,
@@ -588,6 +645,18 @@ export default function workflows(pi: ExtensionAPI) {
                 emit();
               },
             });
+
+            if (outcome.ok && preparedWorktree) {
+              try {
+                record.workspace = await worktrees.finish(preparedWorktree);
+              } catch (error) {
+                outcome = {
+                  ...outcome,
+                  ok: false,
+                  error: `Worktree verification failed: ${errorText(error)}`,
+                };
+              }
+            }
 
             record.usage = outcome.usage;
             record.model = outcome.model ?? record.model;
@@ -613,6 +682,7 @@ export default function workflows(pi: ExtensionAPI) {
               ...(outcome.structured !== undefined
                 ? { structured: outcome.structured }
                 : {}),
+              ...(record.workspace ? { workspace: record.workspace } : {}),
               ...(outcome.error !== undefined ? { error: outcome.error } : {}),
             };
           }, invocationSignal)

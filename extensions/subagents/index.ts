@@ -1,10 +1,10 @@
 /**
- * Subagents — spawn background subagents on one of three backends
- * (pi, Claude Code, Codex) unified behind a single Effect service interface.
+ * Subagents — spawn background pi subagents
+ * unified behind an Effect service interface (pi only).
  *
  * Tools (for the parent LLM):
- * - subagent_spawn: fire-and-forget spawn (prompt, title, agent, working_dir,
- *   model, reasoning_effort). Max 4 running at once across all backends.
+ * - subagent_spawn: fire-and-forget spawn (prompt, title, working_dir,
+ *   model, reasoning_effort). Max 4 running at once.
  * - subagent_wait: block until the listed subagents settle, return results.
  * - subagent_cancel: stop one or more running subagents.
  * - subagent_check: peek at a subagent's status and recent activity.
@@ -15,9 +15,7 @@
  *
  * Architecture: Effect v4 generators throughout (backends -> manager ->
  * runtime); this file is the async boundary where tool handlers run effects
- * against one shared ManagedRuntime. All three backends are real: pi runs
- * in-process SDK sessions, claude drives the Claude Agent SDK, codex speaks
- * JSON-RPC to a scoped `codex app-server` process.
+ * against one shared ManagedRuntime. Only pi runs — claude/codex were removed.
  */
 
 import * as fs from "node:fs";
@@ -280,9 +278,9 @@ export default function (pi: ExtensionAPI) {
       name: Type.String({
         description: SUBAGENT_SPAWN_PARAMETER_DESCRIPTIONS.name,
       }),
-      harness: StringEnum(BACKEND_NAMES, {
+      harness: Type.Optional(StringEnum(BACKEND_NAMES, {
         description: SUBAGENT_SPAWN_PARAMETER_DESCRIPTIONS.harness,
-      }),
+      })),
       working_dir: Type.Optional(
         Type.String({
           description: SUBAGENT_SPAWN_PARAMETER_DESCRIPTIONS.workingDir,
@@ -301,7 +299,8 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const manager = await getManager();
-      const harness = params.harness;
+      const harness = (params.harness ?? "pi") as typeof BACKEND_NAMES[number];
+      if (harness !== "pi") throw new Error(`Only "pi" harness is available (got "${harness}").`);
 
       const cwd = path.resolve(ctx.cwd, params.working_dir ?? ".");
       if (!fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {

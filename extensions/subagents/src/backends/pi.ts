@@ -348,7 +348,7 @@ const makePiSession = (
           sessionManager: SessionManager.create(task.cwd),
           settingsManager,
           resourceLoader: loader,
-          modelRegistry: registry,
+          modelRuntime: (registry as any).runtime ?? registry as any,
           model,
           thinkingLevel,
           excludeTools: [...CHILD_EXCLUDED_TOOL_NAMES],

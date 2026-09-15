@@ -1,0 +1,12 @@
+{
+  "lsp": {
+    "servers": {
+      "typescript": {
+        "enabled": false
+      },
+      "c": {
+        "enabled": false
+      }
+    }
+  }
+}

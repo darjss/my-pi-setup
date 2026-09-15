@@ -1,4 +1,5 @@
-const DEFAULT_CONCURRENCY = 4;
+export const MAX_CONCURRENCY = 8;
+const DEFAULT_CONCURRENCY = MAX_CONCURRENCY;
 export const MAX_AGENT_CALLS = 32;
 export const RUN_SHUTDOWN_TIMEOUT_MS = 8_000;
 
@@ -86,7 +87,7 @@ export class RunController {
 
   constructor(parentSignal?: AbortSignal, concurrency = DEFAULT_CONCURRENCY) {
     this.semaphore = new Semaphore(
-      Math.max(1, Math.min(DEFAULT_CONCURRENCY, Math.floor(concurrency))),
+      Math.max(1, Math.min(MAX_CONCURRENCY, Math.floor(concurrency))),
     );
     if (parentSignal) {
       this.parentSignal = parentSignal;

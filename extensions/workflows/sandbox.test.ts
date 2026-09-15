@@ -45,6 +45,40 @@ test("sandbox exposes only workflow capabilities and validates results", async (
   assert.deepEqual(phases, ["Gather"]);
 });
 
+test("sandbox forwards worktree options and returns workspace metadata", async () => {
+  let received: unknown;
+  const result = await run(
+    `return await agent("write", {
+      workspace: {
+        type: "worktree",
+        setup: ["vp install"],
+        envFiles: [".env.local"],
+      },
+    });`,
+    {
+      onAgent: async (_prompt, options) => {
+        received = options.workspace;
+        return {
+          ok: true,
+          output: "done",
+          workspace: { branch: "pi-workflow/fixture/1" },
+        };
+      },
+    },
+  );
+
+  assert.deepEqual(received, {
+    type: "worktree",
+    setup: ["vp install"],
+    envFiles: [".env.local"],
+  });
+  assert.deepEqual(result, {
+    ok: true,
+    output: "done",
+    workspace: { branch: "pi-workflow/fixture/1" },
+  });
+});
+
 test("sandbox result serialization handles cycles and bigint", async () => {
   const result = await run(`
     const value = { count: 7n };

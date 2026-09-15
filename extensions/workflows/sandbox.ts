@@ -17,12 +17,14 @@ export interface SandboxAgentOptions {
   model?: unknown;
   provider?: unknown;
   effort?: unknown;
+  workspace?: unknown;
 }
 
 export interface SandboxAgentResult {
   ok: boolean;
   output: string;
   structured?: unknown;
+  workspace?: unknown;
   error?: string;
 }
 
@@ -70,6 +72,7 @@ function sanitizeAgentOptions(value: unknown): SandboxAgentOptions {
     ...(value.model !== undefined ? { model: value.model } : {}),
     ...(value.provider !== undefined ? { provider: value.provider } : {}),
     ...(value.effort !== undefined ? { effort: value.effort } : {}),
+    ...(value.workspace !== undefined ? { workspace: value.workspace } : {}),
   };
 }
 

@@ -10,7 +10,7 @@
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import { Data } from "effect";
 
-export const BACKEND_NAMES = ["pi", "claude", "codex"] as const;
+export const BACKEND_NAMES = ["pi"] as const;
 export type BackendName = (typeof BACKEND_NAMES)[number];
 
 /** Who initiated the session. User asides stay out of model-facing tooling. */
@@ -18,9 +18,8 @@ export type SubagentOrigin = "model" | "btw";
 
 /**
  * Shared reasoning-effort scale (pi's thinking levels). Each backend maps a
- * value to its nearest native equivalent: pi uses it directly, codex
- * translates to its reasoning-effort slugs, claude translates to thinking
- * budgets. Omitted = backend default (pi inherits the parent level).
+ * value is pi's thinking level. Only pi is available.
+ * Omitted = backend default (pi inherits the parent level).
  */
 export const REASONING_EFFORTS = [
   "off",
@@ -54,8 +53,7 @@ export interface SpawnTask {
   readonly cwd: string;
   /**
    * Generic model hint, interpreted per backend:
-   * pi: "provider/model-id" or bare model id; claude: model alias;
-   * codex: model slug. Omitted = backend default / inherit.
+   * pi: "provider/model-id" or bare model id. Omitted = backend default / inherit.
    */
   readonly model?: string;
   /** Shared effort scale; each backend maps it to its native equivalent. */
@@ -65,13 +63,13 @@ export interface SpawnTask {
 
 export interface SubagentMeta {
   readonly backend: BackendName;
-  /** Display label, e.g. "anthropic/claude-opus-4-5" or "gpt-5-codex". */
+  /** Display label, e.g. "openai-codex/gpt-5.6-luna". */
   readonly modelLabel?: string;
   /** Context window capacity for utilization display, when known. */
   readonly contextWindow?: number;
-  /** pi session file / Claude projects JSONL / Codex rollout path. */
+  /** pi session file path. */
   readonly sessionFilePath?: string;
-  /** Claude session id / Codex conversation id. */
+  /** Reserved for native session id if needed. */
   readonly nativeSessionId?: string;
 }
 

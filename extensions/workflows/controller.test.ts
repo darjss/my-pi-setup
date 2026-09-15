@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MAX_AGENT_CALLS, RunController } from "./controller.ts";
+import {
+  MAX_AGENT_CALLS,
+  MAX_CONCURRENCY,
+  RunController,
+} from "./controller.ts";
 
 const delay = (milliseconds: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
@@ -23,6 +27,25 @@ test("RunController reserves calls synchronously and caps global fanout", async 
     Array.from({ length: 12 }, (_, i) => i),
   );
   assert.equal(peak, 4);
+  assert.equal(await controller.settle(), true);
+});
+
+test("RunController defaults to the eight-agent concurrency cap", async () => {
+  const controller = new RunController();
+  let active = 0;
+  let peak = 0;
+  const tasks = Array.from({ length: MAX_CONCURRENCY + 4 }, () =>
+    controller.schedule(async () => {
+      active++;
+      peak = Math.max(peak, active);
+      await delay(10);
+      active--;
+    }),
+  );
+
+  await Promise.all(tasks);
+  assert.equal(MAX_CONCURRENCY, 8);
+  assert.equal(peak, MAX_CONCURRENCY);
   assert.equal(await controller.settle(), true);
 });
 

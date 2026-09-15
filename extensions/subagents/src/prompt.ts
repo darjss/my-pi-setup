@@ -2,16 +2,16 @@
 
 /** Describes subagent_spawn, including harnesses and the fixed concurrency cap. */
 export const SUBAGENT_SPAWN_TOOL_DESCRIPTION =
-  "Spawn a background subagent: a fully autonomous, headless agent with its own context window. You choose the harness it runs on: pi (in-process pi session, inherits this environment's tools and config), claude (Claude Code), or codex (Codex CLI). Fire-and-forget: this returns immediately with an id. The subagent's final output is queued back to you as a message when it settles, or collect it explicitly with subagent_wait. Children cannot orchestrate more agents/workflows or ask the user, and cannot see this conversation, so the prompt must be self-contained. Max 4 subagents can be running at once across all harnesses.";
+  "Spawn a background pi subagent: a fully autonomous, headless pi agent with its own context window (in-process pi session, inherits this environment's tools and config). Fire-and-forget: this returns immediately with an id. The subagent's final output is queued back to you as a message when it settles, or collect it explicitly with subagent_wait. Children cannot orchestrate more agents/workflows or ask the user, and cannot see this conversation, so the prompt must be self-contained. Max 4 pi subagents can be running at once.";
 
 /** Adds background subagent delegation to the parent model's available-tools prompt. */
 export const SUBAGENT_SPAWN_PROMPT_SNIPPET =
-  "Spawn a background subagent on a chosen harness (pi, Claude Code, or Codex; own context, normal tools) for a self-contained task";
+  "Spawn a background pi subagent (pi session; own context, normal tools) for a self-contained task";
 
 /** Guides the parent model to delegate standalone tasks and avoid unnecessary blocking waits. */
 export const SUBAGENT_SPAWN_PROMPT_GUIDELINES = [
   "Use subagent_spawn to delegate self-contained tasks that can run in the background; give it a complete, standalone prompt.",
-  "Pick the subagent harness deliberately: pi unless you have a reason to prefer Claude Code or Codex (e.g. the user asked for one, or the task suits that harness).",
+  "Subagents run on pi (in-process pi session) — omit harness or use \"pi\".",
   "After subagent_spawn, keep working; results arrive automatically. Only call subagent_wait when you cannot proceed without the result.",
 ];
 
@@ -21,12 +21,12 @@ export const SUBAGENT_SPAWN_PARAMETER_DESCRIPTIONS = {
     "Task prompt for the subagent. Must be self-contained: include all needed context, file paths, and what to report back.",
   name: "Short human-readable name for this subagent, shown in listings and the UI",
   harness:
-    'Harness to run the subagent on: "pi" (in-process pi session; inherits this environment), "claude" (Claude Code), or "codex" (Codex CLI). Choose deliberately per task.',
+    'Harness is "pi" (in-process pi session; inherits this environment). Only pi is available — omit or pass "pi".',
   workingDir: "Working directory (default: current working directory)",
   model:
-    'Model hint, interpreted by the chosen harness (pi: "provider/model-id" or model id; claude: model alias like "sonnet"/"opus"; codex: model slug). Omit for the harness default (pi inherits the current model).',
+    'Model hint for pi: "provider/model-id" or bare model id. Omit for the harness default (pi inherits the current model).',
   reasoningEffort:
-    "Reasoning effort on a shared scale; the harness maps it to its nearest native equivalent (pi thinking level, codex reasoning effort, claude thinking budget). Omit for the harness default (pi inherits the current level).",
+    "Reasoning effort on a shared scale; mapped to pi thinking level. Omit for the harness default (pi inherits the current level).",
 };
 
 /** Builds the subagent_spawn result that tells the parent model how to continue or inspect the child. */
@@ -73,7 +73,7 @@ export const SUBAGENT_CHECK_PARAMETER_DESCRIPTIONS = {
 
 /** Describes listing all tracked running and settled subagents. */
 export const SUBAGENT_LIST_TOOL_DESCRIPTION =
-  "List all subagents (running and finished) with their harness and status.";
+  "List all subagents (running and finished) with status (pi only).";
 
 /** Builds the child completion/failure wrapper injected into the parent model's context. */
 export function buildSubagentResultMessage(options: {
