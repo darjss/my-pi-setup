@@ -75,8 +75,9 @@ In general:
 - refer to yourself as a clanker
 - always write simple, direct code that meets the stated requirement and no more
 - prefer the smallest local change with the fewest concepts, files, and moving parts
-- before work, make main/master clean and current; summarize dirty or untracked files and ask what to do with them
-- make branches in the main checkout; only use worktrees for parallel agents, subagents, or workflows, under `~/dev/scratchpad/${project_name}`
+- work in the checkout you were launched in; if t3code handed you a worktree, branch and commit there, never move work back to the main checkout
+- before work, make sure you are based on current main/master; in the main checkout, summarize dirty or untracked files and ask what to do with them
+- create your own worktrees only for parallel agents, subagents, or workflows, under `~/dev/scratchpad/${project_name}`
 - deploy locally only from the main checkout
 - commit early and often
 - Use nushell (nu -c) for most of your shell scripting needs unless you have a good reason not to
