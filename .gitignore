@@ -32,3 +32,7 @@ models-store.json
 # Generated/runtime artifacts
 generated-images/
 t3-control-v2/
+
+# Global rules and skills live in darjss/dev-box agents/, linked by bin/link-agents.sh
+/AGENTS.md
+/skills/
