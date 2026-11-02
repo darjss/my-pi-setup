@@ -31,8 +31,9 @@ After cloning or pulling this repository, apply the shared defaults:
 node ~/.pi/agent/scripts/apply-settings.mjs
 ```
 
-This sets OpenAI GPT-6.1 Sol, the dark theme, and the standard tools. It preserves
-other local settings, including the device ID. Auth and sessions remain local.
+This sets GPT-6.1 Sol, the dark theme, and the standard tools. It preserves
+other local settings, including the provider and device ID. Set `defaultProvider`
+in local `settings.json` to the provider for your account. Auth and sessions remain local.
 
 Global rules and skills live in `darjss/dev-box`. Run its `bin/link-agents.sh`
 to link them, and install `files/fish/functions/pi.fish` as
