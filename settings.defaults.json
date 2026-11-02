@@ -1,0 +1,7 @@
+{
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6.1-sol",
+  "theme": "dark",
+  "defaultTools": ["read", "bash", "edit", "write"],
+  "codemode": { "mode": "on" }
+}
