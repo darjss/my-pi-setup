@@ -31,7 +31,7 @@ After cloning or pulling this repository, apply the shared defaults:
 node ~/.pi/agent/scripts/apply-settings.mjs
 ```
 
-This sets GPT-6.1 Sol, the dark theme, and the standard tools. It preserves
+This sets GPT-6.1 Sol, the dark theme, and codemode-only tool calls. It preserves
 other local settings, including the provider and device ID. Set `defaultProvider`
 in local `settings.json` to the provider for your account. Auth and sessions remain local.
 
